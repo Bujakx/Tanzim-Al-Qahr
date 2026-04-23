@@ -76,7 +76,7 @@ module.exports = {
         const safeUsername = (state.username && state.username.length > 0)
           ? state.username
           : (message.author.username || message.author.globalName || message.author.displayName || message.author.id);
-        const appId = saveApplication(message.author.id, safeUsername, state.answers);
+        const appId = await saveApplication(message.author.id, safeUsername, state.answers);
 
         const guild = message.client.guilds.cache.get(state.guildId)
           || await message.client.guilds.fetch(state.guildId).catch(() => null);
@@ -113,7 +113,7 @@ module.exports = {
           );
 
           const sentMsg = await podaniaChannel.send({ embeds: [applicationEmbed], components: [row] });
-          setApplicationMessageId(appId, sentMsg.id);
+          await setApplicationMessageId(appId, sentMsg.id);
         } else {
           console.error('[REKRUTACJA] Brak kanału podań — podanie zapisane w bazie ale nie wysłane do zarządu.');
         }
@@ -135,7 +135,7 @@ module.exports = {
       await message.delete().catch(() => {});
 
       // Zapisz propozycję w bazie
-      const proposalId = saveProposal(message.author.id, message.author.username, content);
+      const proposalId = await saveProposal(message.author.id, message.author.username, content);
 
       const embed = buildProposalEmbed({
         content,
@@ -152,7 +152,7 @@ module.exports = {
       });
 
       // Zaktualizuj ID w bazie i podmień przyciski z prawdziwym ID
-      updateProposalMessageId(proposalId, sentMsg.id);
+      await updateProposalMessageId(proposalId, sentMsg.id);
 
       const finalRow = buildVoteRow(sentMsg.id, { za: 0, przeciw: 0 });
       await sentMsg.edit({ components: [finalRow] });

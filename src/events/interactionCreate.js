@@ -58,7 +58,7 @@ module.exports = {
       }
       // Sprawdź czy ma oczekujące podanie w bazie
       let pendingApp;
-      try { pendingApp = getPendingApplicationByUser(interaction.user.id); } catch { pendingApp = null; }
+      try { pendingApp = await getPendingApplicationByUser(interaction.user.id); } catch { pendingApp = null; }
       if (pendingApp) {
         return interaction.reply({
           embeds: [errorEmbed('Twoje poprzednie podanie jest jeszcze rozpatrywane. Poczekaj na decyzję zarządu.')],
@@ -140,7 +140,7 @@ module.exports = {
       }
 
       const appId = parseInt(interaction.customId.split('_')[2]);
-      const app = getApplication(appId);
+      const app = await getApplication(appId);
       if (!app) {
         return interaction.reply({ embeds: [errorEmbed('Nie znaleziono podania.')], flags: 64 });
       }
@@ -152,7 +152,7 @@ module.exports = {
       const candidateUser = await interaction.client.users.fetch(app.user_id).catch(() => null);
       const candidateMember = await interaction.guild.members.fetch(app.user_id).catch(() => null);
 
-      updateApplicationStatus(appId, isAccept ? 'accepted' : 'rejected', interaction.user.id);
+      await updateApplicationStatus(appId, isAccept ? 'accepted' : 'rejected', interaction.user.id);
 
       // Edytuj wiadomość na kanale podań — usuń przyciski, pokaż decyzję
       const resolvedEmbed = new EmbedBuilder()
@@ -225,14 +225,14 @@ module.exports = {
       const voteType = parts[1]; // 'za' lub 'przeciw'
       const messageId = parts.slice(2).join('_');
 
-      const proposal = getProposalByMessageId(messageId);
+      const proposal = await getProposalByMessageId(messageId);
       if (!proposal) {
         return interaction.reply({ embeds: [errorEmbed('Nie znaleziono propozycji.')], flags: 64 });
       }
 
-      const result = voteProposal(proposal.id, interaction.user.id, voteType);
+      const result = await voteProposal(proposal.id, interaction.user.id, voteType);
       // Pobierz zaktualizowane dane
-      const updated = getProposalByMessageId(messageId);
+      const updated = await getProposalByMessageId(messageId);
 
       // Zaktualizuj embed
       const embed = buildProposalEmbed(updated);

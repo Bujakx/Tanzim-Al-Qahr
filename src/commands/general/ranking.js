@@ -17,7 +17,7 @@ module.exports = {
 
   async execute(interaction) {
     const limit = interaction.options.getInteger('top') || 10;
-    const board = getLeaderboard(limit);
+    const board = await getLeaderboard(limit);
 
     if (!board.length) {
       const empty = new EmbedBuilder()
@@ -45,7 +45,7 @@ module.exports = {
 
   async executePrefix(message, args) {
     const limit = parseInt(args[0]) || 10;
-    const board = getLeaderboard(Math.min(limit, 25));
+    const board = await getLeaderboard(Math.min(limit, 25));
 
     if (!board.length) {
       const empty = new EmbedBuilder().setColor(COLORS.INFO).setTitle(`${EMOJI.RANK} Ranking`).setDescription('Brak danych.').setTimestamp();

@@ -31,7 +31,7 @@ module.exports = {
     // Czytaj aktualną liczbę minusów z ról Discorda (nie z bazy)
     const minusy = getMinusCount(freshMember);
     const newMinusy = Math.min(minusy + 1, 3);
-    setMinusy(target.id, username, newMinusy);
+    await setMinusy(target.id, username, newMinusy);
     await setMinusRoles(freshMember, newMinusy);
 
     const plusyChannel = process.env.PLUSY_CHANNEL_ID

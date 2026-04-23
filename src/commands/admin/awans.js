@@ -67,7 +67,7 @@ module.exports = {
 
     // Zapisz do bazy
     const targetUsername = targetMember.user?.username || target.username || target.id;
-    logPromotion(target.id, targetUsername, 'awans', oldRankName, newRank.name, reason, interaction.user.id);
+    await logPromotion(target.id, targetUsername, 'awans', oldRankName, newRank.name, reason, interaction.user.id);
 
     const embed = new EmbedBuilder()
       .setColor(COLORS.SUCCESS)

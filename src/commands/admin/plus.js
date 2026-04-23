@@ -38,7 +38,7 @@ module.exports = {
     // Czytaj aktualną liczbę plusów z ról Discorda (nie z bazy)
     const plusy = getPlusCount(freshMember);
     const newPlusy = Math.min(plusy + 1, 3);
-    setPlusy(target.id, username, newPlusy);
+    await setPlusy(target.id, username, newPlusy);
     await setPlusRoles(freshMember, newPlusy);
 
     const plusyChannel = process.env.PLUSY_CHANNEL_ID
@@ -55,7 +55,7 @@ module.exports = {
     if (newPlusy >= 3) {
       if (isLocked) {
         embed.addFields({ name: '🔒 Uwaga', value: 'Ranga zablokowana — auto-awans pominięty. Plusy wyzerowane.' });
-        setPlusy(target.id, username, 0);
+        await setPlusy(target.id, username, 0);
         await setPlusRoles(freshMember, 0);
         try {
           if (plusyChannel) await plusyChannel.send({ embeds: [new EmbedBuilder()
@@ -90,11 +90,11 @@ module.exports = {
         if (nextIndex < HIERARCHY.length) {
           const nextRank = HIERARCHY[nextIndex];
           await setRank(freshMember, nextRank.id);
-          setPlusy(target.id, username, 0);
+          await setPlusy(target.id, username, 0);
           await setPlusRoles(freshMember, 0);
 
           const oldRankName = currentRankData ? currentRankData.rank.name : 'Brak';
-          logPromotion(target.id, username, 'awans', oldRankName, nextRank.name, 'Auto-awans: 3 plusy', interaction.user.id);
+          await logPromotion(target.id, username, 'awans', oldRankName, nextRank.name, 'Auto-awans: 3 plusy', interaction.user.id);
 
           embed
             .setColor(COLORS.GOLD)

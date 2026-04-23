@@ -19,8 +19,8 @@ module.exports = {
     const targetMember = await interaction.guild.members.fetch(target.id).catch(() => null);
     if (!targetMember) return interaction.reply({ embeds: [errorEmbed('Nie znaleziono uytkownika.')], flags: 64 });
 
-    setPlusy(target.id, target.username, 0);
-    setMinusy(target.id, target.username, 0);
+    await setPlusy(target.id, target.username, 0);
+    await setMinusy(target.id, target.username, 0);
     await setPlusRoles(targetMember, 0);
     await setMinusRoles(targetMember, 0);
 
@@ -34,7 +34,7 @@ module.exports = {
 
     await sendLog(interaction.client, new EmbedBuilder()
       .setColor(COLORS.INFO)
-      .setTitle('?? [RESET] Resetowanie plusów/minusów')
+      .setTitle('?? [RESET] Resetowanie plusï¿½w/minusï¿½w')
       .addFields(
         { name: 'Uytkownik', value: `<@${target.id}> (${target.username})`, inline: true },
         { name: 'Zresetowa', value: `<@${interaction.user.id}>`, inline: true },

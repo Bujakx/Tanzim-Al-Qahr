@@ -51,7 +51,7 @@ module.exports = {
     const target = interaction.options.getUser('czlonek');
 
     if (sub === 'lista') {
-      const warns = getWarnings(target.id);
+      const warns = await getWarnings(target.id);
       if (!warns.length) {
         const embed = new EmbedBuilder()
           .setColor(COLORS.SUCCESS)
@@ -84,7 +84,7 @@ module.exports = {
         });
       }
       const warningId = interaction.options.getInteger('id');
-      const removed = removeWarning(warningId, target.id);
+      const removed = await removeWarning(warningId, target.id);
       if (!removed) {
         return interaction.reply({
           embeds: [errorEmbed(`Nie znaleziono ostrzeżenia o ID \`${warningId}\` dla tego użytkownika.`)],
@@ -118,7 +118,7 @@ module.exports = {
 
     // sub === 'dodaj'
     const reason = interaction.options.getString('powod');
-    const result = addWarning(target.id, target.username, reason, interaction.user.id);
+    const result = await addWarning(target.id, target.username, reason, interaction.user.id);
     const totalWarns = result.warnings;
 
     const embed = new EmbedBuilder()
@@ -199,7 +199,7 @@ module.exports = {
     if (!mention) return message.reply({ embeds: [errorEmbed('Oznacz użytkownika!')] });
 
     if (sub === 'lista') {
-      const warns = getWarnings(mention.id);
+      const warns = await getWarnings(mention.id);
       if (!warns.length) {
         return message.reply({
           embeds: [new EmbedBuilder().setColor(COLORS.SUCCESS).setTitle(`${EMOJI.SHIELD} Brak warnów — ${mention.username}`).setTimestamp()],
@@ -215,7 +215,7 @@ module.exports = {
       if (!isAdmin(message.member)) return message.reply({ embeds: [errorEmbed('Tylko admin!')] });
       const warningId = parseInt(args[2]);
       if (!warningId) return message.reply({ embeds: [errorEmbed('Podaj ID warnu!')] });
-      const removed = removeWarning(warningId, mention.id);
+      const removed = await removeWarning(warningId, mention.id);
       if (!removed) return message.reply({ embeds: [errorEmbed('Nie znaleziono warnu.')] });
       return message.reply({
         embeds: [new EmbedBuilder().setColor(COLORS.SUCCESS).setTitle(`${EMOJI.CHECK} Usunięto warn ID ${warningId}`).setTimestamp()],
@@ -223,7 +223,7 @@ module.exports = {
     }
 
     const reason = args.slice(2).join(' ') || 'Brak powodu';
-    const result = addWarning(mention.id, mention.username, reason, message.author.id);
+    const result = await addWarning(mention.id, mention.username, reason, message.author.id);
     const embed = new EmbedBuilder()
       .setColor(COLORS.WARNING)
       .setTitle(`${EMOJI.WARN} Ostrzeżenie`)

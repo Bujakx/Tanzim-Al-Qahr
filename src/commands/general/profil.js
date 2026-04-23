@@ -45,8 +45,8 @@ module.exports = {
   async execute(interaction) {
     const target = interaction.options.getUser('czlonek') || interaction.user;
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-    const dbMember = getMember(target.id);
-    const warns = getWarnings(target.id);
+    const dbMember = await getMember(target.id);
+    const warns = await getWarnings(target.id);
 
     const points = dbMember?.points ?? 0;
     const rank = getRank(points);
@@ -98,8 +98,8 @@ module.exports = {
   async executePrefix(message, args) {
     const mention = message.mentions.users.first() || message.author;
     const member = await message.guild.members.fetch(mention.id).catch(() => null);
-    const dbMember = getMember(mention.id);
-    const warns = getWarnings(mention.id);
+    const dbMember = await getMember(mention.id);
+    const warns = await getWarnings(mention.id);
 
     const points = dbMember?.points ?? 0;
     const rank = getRank(points);

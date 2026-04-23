@@ -66,7 +66,7 @@ module.exports = {
     const oldRankName = currentRankData ? currentRankData.rank.name : 'Brak';
 
     const targetUsername = targetMember.user?.username || target.username || target.id;
-    logPromotion(target.id, targetUsername, 'degradacja', oldRankName, newRank.name, reason, interaction.user.id);
+    await logPromotion(target.id, targetUsername, 'degradacja', oldRankName, newRank.name, reason, interaction.user.id);
 
     const embed = new EmbedBuilder()
       .setColor(COLORS.ERROR)

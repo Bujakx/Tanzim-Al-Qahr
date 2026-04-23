@@ -2,6 +2,7 @@ const { REST, Routes, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle
 const { HIERARCHY } = require('../utils/ranks');
 const { COLORS } = require('../utils/constants');
 const { updateHierarchyEmbed, updateKomendyEmbed, sendHistoriaEmbed } = require('../utils/helpers');
+const { initDb } = require('../database/database');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
@@ -23,6 +24,9 @@ module.exports = {
   async execute(client) {
     console.log(`\n✅ Bot zalogowany jako: ${client.user.tag}`);
     console.log(`📡 Serwery: ${client.guilds.cache.size}\n`);
+
+    // Inicjalizacja bazy danych MySQL
+    await initDb().catch(err => console.error('❌ Błąd inicjalizacji DB:', err));
 
     // ============================
     // 1. Auto-rejestracja komend slash
