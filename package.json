@@ -1,0 +1,22 @@
+{
+  "name": "tanzim-al-qahr-bot",
+  "version": "1.0.0",
+  "description": "Discord bot dla organizacji Tanzim Al-Qahr (FiveM RP)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "node-sqlite3-wasm": "^0.8.9",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
