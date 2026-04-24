@@ -103,7 +103,23 @@ async function initDb() {
     await conn.query(`CREATE TABLE IF NOT EXISTS settings (
       key_name   VARCHAR(50)  PRIMARY KEY,
       value      TEXT
-    ) CHARSET=utf8mb4`);    console.log('✅ Baza danych (MySQL) gotowa!');
+    ) CHARSET=utf8mb4`);
+    await conn.query(`CREATE TABLE IF NOT EXISTS finance (
+      id      INT AUTO_INCREMENT PRIMARY KEY,
+      balance BIGINT NOT NULL DEFAULT 0
+    ) CHARSET=utf8mb4`);
+    await conn.query(`INSERT IGNORE INTO finance (id, balance) VALUES (1, 0)`);
+    await conn.query(`CREATE TABLE IF NOT EXISTS finance_log (
+      id               INT AUTO_INCREMENT PRIMARY KEY,
+      action           VARCHAR(10)  NOT NULL,
+      amount           BIGINT       NOT NULL,
+      user_ic          VARCHAR(100) NOT NULL,
+      user_id          VARCHAR(30)  NOT NULL,
+      reason           TEXT,
+      balance_after    BIGINT       NOT NULL,
+      created_at       DATETIME     DEFAULT CURRENT_TIMESTAMP
+    ) CHARSET=utf8mb4`);
+    console.log('✅ Baza danych (MySQL) gotowa!');
   } finally {
     conn.release();
   }
@@ -338,6 +354,43 @@ async function setSetting(key, value) {
   );
 }
 
+// --- Finanse ---
+
+async function getBalance() {
+  const [rows] = await pool.query('SELECT balance FROM finance WHERE id = 1');
+  return rows[0]?.balance ?? 0;
+}
+
+async function depositMoney(amount, userIc, userId, reason) {
+  await pool.query('UPDATE finance SET balance = balance + ? WHERE id = 1', [amount]);
+  const [rows] = await pool.query('SELECT balance FROM finance WHERE id = 1');
+  const balanceAfter = rows[0].balance;
+  await pool.query(
+    'INSERT INTO finance_log (action, amount, user_ic, user_id, reason, balance_after) VALUES (?, ?, ?, ?, ?, ?)',
+    ['wplata', amount, userIc, userId, reason || null, balanceAfter]
+  );
+  return balanceAfter;
+}
+
+async function withdrawMoney(amount, userIc, userId, reason) {
+  const [rows] = await pool.query('SELECT balance FROM finance WHERE id = 1');
+  const current = rows[0]?.balance ?? 0;
+  if (current < amount) return { success: false, available: current };
+  await pool.query('UPDATE finance SET balance = balance - ? WHERE id = 1', [amount]);
+  const [updated] = await pool.query('SELECT balance FROM finance WHERE id = 1');
+  const balanceAfter = updated[0].balance;
+  await pool.query(
+    'INSERT INTO finance_log (action, amount, user_ic, user_id, reason, balance_after) VALUES (?, ?, ?, ?, ?, ?)',
+    ['wyplata', amount, userIc, userId, reason || null, balanceAfter]
+  );
+  return { success: true, balanceAfter };
+}
+
+async function getFinanceLog(limit = 10) {
+  const [rows] = await pool.query('SELECT * FROM finance_log ORDER BY created_at DESC LIMIT ?', [limit]);
+  return rows;
+}
+
 module.exports = {
   pool,
   initDb,
@@ -368,5 +421,9 @@ module.exports = {
   getStorageLog,
   getSetting,
   setSetting,
+  getBalance,
+  depositMoney,
+  withdrawMoney,
+  getFinanceLog,
 };
 

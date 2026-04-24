@@ -255,7 +255,21 @@ module.exports = {
       const { handleModal } = require('../commands/admin/szafka');
       return handleModal(interaction);
     }
+    // ============================
+    // BUTTON: Finanse (wpłać / wypłać)
+    // ============================
+    if (interaction.isButton() && (interaction.customId === 'finanse_wplac' || interaction.customId === 'finanse_wyplac')) {
+      const { handleButton } = require('../commands/admin/pieniadze');
+      return handleButton(interaction);
+    }
 
+    // ============================
+    // MODAL: Finanse
+    // ============================
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('finanse_modal_')) {
+      const { handleModal } = require('../commands/admin/pieniadze');
+      return handleModal(interaction);
+    }
     } catch (err) {
       console.error('[InteractionCreate] Nieobsłużony błąd:', err);
       try {
