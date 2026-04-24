@@ -49,16 +49,20 @@ async function updateStorageMessage(client) {
   try {
     const channelId = await getSetting('storage_channel_id') || process.env.SZAFKA_CHANNEL_ID;
     const msgId = await getSetting('storage_message_id');
-    if (!channelId || !msgId) {
-      console.warn('[SZAFKA] Brak storage_channel_id lub storage_message_id w ustawieniach.');
+    if (!channelId) {
+      console.warn('[SZAFKA] Brak storage_channel_id w ustawieniach.');
       return;
     }
     const channel = await client.channels.fetch(channelId).catch(() => null);
     if (!channel) { console.warn('[SZAFKA] Nie znaleziono kanalu:', channelId); return; }
-    const msg = await channel.messages.fetch(msgId).catch(() => null);
-    if (!msg) { console.warn('[SZAFKA] Nie znaleziono wiadomosci:', msgId); return; }
+    // Usun stara wiadomosc (pojawi sie nowa na dole)
+    if (msgId) {
+      const old = await channel.messages.fetch(msgId).catch(() => null);
+      if (old) await old.delete().catch(() => null);
+    }
     const items = await getStorage();
-    await msg.edit({ embeds: [await buildStorageEmbed(items)], components: [buildActionRow()] });
+    const sent = await channel.send({ embeds: [await buildStorageEmbed(items)], components: [buildActionRow()] });
+    await setSetting('storage_message_id', sent.id);
   } catch (err) {
     console.error('[SZAFKA] Nie udalo sie zaktualizowac embeda:', err.message);
   }
