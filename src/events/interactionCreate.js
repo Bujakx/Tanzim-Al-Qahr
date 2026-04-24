@@ -239,6 +239,23 @@ module.exports = {
       await interaction.update({ embeds: [embed], components: [row] });
       return;
     }
+
+    // ============================
+    // BUTTON: Szafka (w\u0142\u00f3\u017c / wyjmij)
+    // ============================
+    if (interaction.isButton() && (interaction.customId === 'szafka_wloz' || interaction.customId === 'szafka_wyjmij')) {
+      const { handleButton } = require('../commands/admin/szafka');
+      return handleButton(interaction);
+    }
+
+    // ============================
+    // MODAL: Szafka
+    // ============================
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('szafka_modal_')) {
+      const { handleModal } = require('../commands/admin/szafka');
+      return handleModal(interaction);
+    }
+
     } catch (err) {
       console.error('[InteractionCreate] Nieobsłużony błąd:', err);
       try {
