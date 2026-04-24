@@ -7,10 +7,12 @@ module.exports = {
 
   async execute(member) {
     const mustajadRoleId = process.env.ROLE_MUSTAJAD;
+    const kandydatRoleId = process.env.ROLE_KANDYDAT;
 
-    // Nadaj rangę Mustajad (kandydat) nowym członkom serwera
-    if (mustajadRoleId) {
-      await member.roles.add(mustajadRoleId).catch(() => {});
+    // Nadaj rangi nowym członkom serwera
+    const rolesToAdd = [mustajadRoleId, kandydatRoleId].filter(Boolean);
+    if (rolesToAdd.length) {
+      await member.roles.add(rolesToAdd).catch(() => {});
     }
 
     // ============================
