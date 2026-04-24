@@ -86,8 +86,24 @@ async function initDb() {
       reason     TEXT,
       given_by   VARCHAR(30)  NOT NULL,
       created_at DATETIME     DEFAULT CURRENT_TIMESTAMP
+    ) CHARSET=utf8mb4`);    await conn.query(`CREATE TABLE IF NOT EXISTS storage (
+      item_name  VARCHAR(100) PRIMARY KEY,
+      quantity   INT          NOT NULL DEFAULT 0
     ) CHARSET=utf8mb4`);
-    console.log('✅ Baza danych (MySQL) gotowa!');
+    await conn.query(`CREATE TABLE IF NOT EXISTS storage_log (
+      id               INT AUTO_INCREMENT PRIMARY KEY,
+      item_name        VARCHAR(100) NOT NULL,
+      action           VARCHAR(10)  NOT NULL,
+      quantity         INT          NOT NULL,
+      user_ic          VARCHAR(100) NOT NULL,
+      user_id          VARCHAR(30)  NOT NULL,
+      source_or_reason TEXT,
+      created_at       DATETIME     DEFAULT CURRENT_TIMESTAMP
+    ) CHARSET=utf8mb4`);
+    await conn.query(`CREATE TABLE IF NOT EXISTS settings (
+      key_name   VARCHAR(50)  PRIMARY KEY,
+      value      TEXT
+    ) CHARSET=utf8mb4`);    console.log('✅ Baza danych (MySQL) gotowa!');
   } finally {
     conn.release();
   }
@@ -271,6 +287,57 @@ async function logPromotion(userId, username, type, oldRank, newRank, reason, gi
   );
 }
 
+// --- Szafka ---
+
+async function addStorageItem(itemName, quantity, userIc, userId, source) {
+  await pool.query(
+    'INSERT INTO storage (item_name, quantity) VALUES (?, ?) ON DUPLICATE KEY UPDATE quantity = quantity + ?',
+    [itemName, quantity, quantity]
+  );
+  await pool.query(
+    'INSERT INTO storage_log (item_name, action, quantity, user_ic, user_id, source_or_reason) VALUES (?, ?, ?, ?, ?, ?)',
+    [itemName, 'wloz', quantity, userIc, userId, source || null]
+  );
+  const [rows] = await pool.query('SELECT quantity FROM storage WHERE item_name = ?', [itemName]);
+  return rows[0]?.quantity ?? quantity;
+}
+
+async function removeStorageItem(itemName, quantity, userIc, userId, reason) {
+  const [rows] = await pool.query('SELECT quantity FROM storage WHERE item_name = ?', [itemName]);
+  if (!rows.length || rows[0].quantity < quantity) {
+    return { success: false, available: rows[0]?.quantity ?? 0 };
+  }
+  await pool.query('UPDATE storage SET quantity = quantity - ? WHERE item_name = ?', [quantity, itemName]);
+  await pool.query(
+    'INSERT INTO storage_log (item_name, action, quantity, user_ic, user_id, source_or_reason) VALUES (?, ?, ?, ?, ?, ?)',
+    [itemName, 'wyjmij', quantity, userIc, userId, reason || null]
+  );
+  const [updated] = await pool.query('SELECT quantity FROM storage WHERE item_name = ?', [itemName]);
+  return { success: true, newQuantity: updated[0]?.quantity ?? 0 };
+}
+
+async function getStorage() {
+  const [rows] = await pool.query('SELECT * FROM storage WHERE quantity > 0 ORDER BY item_name ASC');
+  return rows;
+}
+
+async function getStorageLog(limit = 10) {
+  const [rows] = await pool.query('SELECT * FROM storage_log ORDER BY created_at DESC LIMIT ?', [limit]);
+  return rows;
+}
+
+async function getSetting(key) {
+  const [rows] = await pool.query('SELECT value FROM settings WHERE key_name = ?', [key]);
+  return rows[0]?.value ?? null;
+}
+
+async function setSetting(key, value) {
+  await pool.query(
+    'INSERT INTO settings (key_name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?',
+    [key, value, value]
+  );
+}
+
 module.exports = {
   pool,
   initDb,
@@ -295,5 +362,11 @@ module.exports = {
   getProposalByMessageId,
   voteProposal,
   logPromotion,
+  addStorageItem,
+  removeStorageItem,
+  getStorage,
+  getStorageLog,
+  getSetting,
+  setSetting,
 };
 
