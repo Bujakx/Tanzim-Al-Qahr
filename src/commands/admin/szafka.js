@@ -47,13 +47,16 @@ async function buildStorageEmbed(items) {
 
 async function updateStorageMessage(client) {
   try {
-    const channelId = process.env.SZAFKA_CHANNEL_ID;
+    const channelId = await getSetting('storage_channel_id') || process.env.SZAFKA_CHANNEL_ID;
     const msgId = await getSetting('storage_message_id');
-    if (!channelId || !msgId) return;
+    if (!channelId || !msgId) {
+      console.warn('[SZAFKA] Brak storage_channel_id lub storage_message_id w ustawieniach.');
+      return;
+    }
     const channel = await client.channels.fetch(channelId).catch(() => null);
-    if (!channel) return;
+    if (!channel) { console.warn('[SZAFKA] Nie znaleziono kanalu:', channelId); return; }
     const msg = await channel.messages.fetch(msgId).catch(() => null);
-    if (!msg) return;
+    if (!msg) { console.warn('[SZAFKA] Nie znaleziono wiadomosci:', msgId); return; }
     const items = await getStorage();
     await msg.edit({ embeds: [await buildStorageEmbed(items)], components: [buildActionRow()] });
   } catch (err) {
@@ -142,7 +145,6 @@ async function handleModal(interaction) {
         )
         .setFooter({ text: 'Dodal: ' + interaction.user.username })
         .setTimestamp()],
-      flags: 64,
     });
     await updateStorageMessage(interaction.client);
     await sendLog(interaction.client, new EmbedBuilder()
@@ -183,7 +185,6 @@ async function handleModal(interaction) {
         )
         .setFooter({ text: 'Pobral: ' + interaction.user.username })
         .setTimestamp()],
-      flags: 64,
     });
     await updateStorageMessage(interaction.client);
     await sendLog(interaction.client, new EmbedBuilder()
@@ -247,6 +248,7 @@ module.exports = {
         components: [buildActionRow()],
       });
       await setSetting('storage_message_id', sent.id);
+      await setSetting('storage_channel_id', interaction.channelId);
       return interaction.reply({
         embeds: [new EmbedBuilder()
           .setColor(COLORS.SUCCESS)
@@ -284,7 +286,6 @@ module.exports = {
           )
           .setFooter({ text: 'Dodal: ' + interaction.user.username })
           .setTimestamp()],
-        flags: 64,
       });
       await updateStorageMessage(interaction.client);
       await sendLog(interaction.client, new EmbedBuilder()
@@ -325,7 +326,6 @@ module.exports = {
           )
           .setFooter({ text: 'Pobral: ' + interaction.user.username })
           .setTimestamp()],
-        flags: 64,
       });
       await updateStorageMessage(interaction.client);
       await sendLog(interaction.client, new EmbedBuilder()
