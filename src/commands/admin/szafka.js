@@ -72,9 +72,6 @@ function buildWlozModal() {
   const modal = new ModalBuilder().setCustomId('szafka_modal_wloz').setTitle('Wloz do szafki');
   modal.addComponents(
     new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('nick_ic').setLabel('Nick IC').setStyle(TextInputStyle.Short).setRequired(true).setPlaceholder('Jan Kowalski')
-    ),
-    new ActionRowBuilder().addComponents(
       new TextInputBuilder().setCustomId('przedmiot').setLabel('Nazwa przedmiotu').setStyle(TextInputStyle.Short).setRequired(true).setPlaceholder('np. Pistolet, Apteczka...')
     ),
     new ActionRowBuilder().addComponents(
@@ -94,9 +91,6 @@ async function buildWyjmijModal() {
     : 'Szafka pusta';
   const modal = new ModalBuilder().setCustomId('szafka_modal_wyjmij').setTitle('Wyjmij z szafki');
   modal.addComponents(
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('nick_ic').setLabel('Nick IC').setStyle(TextInputStyle.Short).setRequired(true).setPlaceholder('Jan Kowalski')
-    ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder().setCustomId('przedmiot').setLabel('Nazwa przedmiotu').setStyle(TextInputStyle.Short).setRequired(true).setPlaceholder(itemList)
     ),
@@ -125,7 +119,7 @@ async function handleModal(interaction) {
   if (!hasStorageAccess(interaction.member)) {
     return interaction.reply({ embeds: [errorEmbed('Brak dostepu do szafki!')], flags: 64 });
   }
-  const nickIc = interaction.fields.getTextInputValue('nick_ic').trim();
+  const nickIc = interaction.member.displayName;
   const item   = interaction.fields.getTextInputValue('przedmiot').trim();
   const qty    = parseInt(interaction.fields.getTextInputValue('ilosc').trim(), 10);
 
@@ -144,10 +138,9 @@ async function handleModal(interaction) {
           { name: 'Przedmiot', value: item,                inline: true },
           { name: 'Dodano',    value: '+' + qty + ' szt.', inline: true },
           { name: 'Nowy stan', value: '**' + newQty + ' szt.**', inline: true },
-          { name: 'Nick IC',   value: nickIc,              inline: true },
+          { name: 'Kto',       value: '<@' + interaction.user.id + '>', inline: true },
           { name: 'Skad',      value: source,              inline: true },
         )
-        .setFooter({ text: 'Dodal: ' + interaction.user.username })
         .setTimestamp()],
     });
     await updateStorageMessage(interaction.client);
@@ -158,9 +151,9 @@ async function handleModal(interaction) {
         { name: 'Przedmiot', value: item,   inline: true },
         { name: 'Ilosc',     value: '+' + qty, inline: true },
         { name: 'Nowy stan', value: newQty + ' szt.', inline: true },
-        { name: 'Nick IC',   value: nickIc, inline: true },
         { name: 'Skad',      value: source, inline: true },
         { name: 'Discord',   value: '<@' + interaction.user.id + '>', inline: true },
+        { name: 'Nick',      value: nickIc, inline: true },
       ).setTimestamp());
     return;
   }
@@ -184,10 +177,9 @@ async function handleModal(interaction) {
           { name: 'Przedmiot',  value: item,                                   inline: true },
           { name: 'Pobrano',    value: '-' + qty + ' szt.',                    inline: true },
           { name: 'Pozostalo',  value: '**' + result.newQuantity + ' szt.**',  inline: true },
-          { name: 'Nick IC',    value: nickIc,                                 inline: true },
+          { name: 'Kto',        value: '<@' + interaction.user.id + '>',        inline: true },
           { name: 'Powod',      value: reason,                                 inline: true },
         )
-        .setFooter({ text: 'Pobral: ' + interaction.user.username })
         .setTimestamp()],
     });
     await updateStorageMessage(interaction.client);
@@ -198,9 +190,9 @@ async function handleModal(interaction) {
         { name: 'Przedmiot', value: item,   inline: true },
         { name: 'Ilosc',     value: '-' + qty, inline: true },
         { name: 'Pozostalo', value: result.newQuantity + ' szt.', inline: true },
-        { name: 'Nick IC',   value: nickIc, inline: true },
         { name: 'Powod',     value: reason, inline: true },
         { name: 'Discord',   value: '<@' + interaction.user.id + '>', inline: true },
+        { name: 'Nick',      value: nickIc, inline: true },
       ).setTimestamp());
     return;
   }
@@ -220,14 +212,12 @@ module.exports = {
       sub.setName('wloz').setDescription('Wloz przedmiot do szafki')
         .addStringOption(o => o.setName('przedmiot').setDescription('Nazwa przedmiotu').setRequired(true))
         .addIntegerOption(o => o.setName('ilosc').setDescription('Ilosc sztuk').setRequired(true).setMinValue(1))
-        .addStringOption(o => o.setName('nick_ic').setDescription('Twoj nick IC').setRequired(true))
         .addStringOption(o => o.setName('skad').setDescription('Skad pochodzi').setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('wyjmij').setDescription('Wyjmij przedmiot z szafki')
         .addStringOption(o => o.setName('przedmiot').setDescription('Nazwa przedmiotu').setRequired(true))
         .addIntegerOption(o => o.setName('ilosc').setDescription('Ilosc sztuk').setRequired(true).setMinValue(1))
-        .addStringOption(o => o.setName('nick_ic').setDescription('Twoj nick IC').setRequired(true))
         .addStringOption(o => o.setName('powod').setDescription('Cel / powod pobrania').setRequired(false))
     ),
 
@@ -274,7 +264,7 @@ module.exports = {
     if (sub === 'wloz') {
       const item   = interaction.options.getString('przedmiot');
       const qty    = interaction.options.getInteger('ilosc');
-      const nickIc = interaction.options.getString('nick_ic');
+      const nickIc = interaction.member.displayName;
       const source = interaction.options.getString('skad') || 'Nie podano';
       const newQty = await addStorageItem(item, qty, nickIc, interaction.user.id, source);
       await interaction.reply({
@@ -285,10 +275,9 @@ module.exports = {
             { name: 'Przedmiot', value: item,                inline: true },
             { name: 'Dodano',    value: '+' + qty + ' szt.', inline: true },
             { name: 'Nowy stan', value: '**' + newQty + ' szt.**', inline: true },
-            { name: 'Nick IC',   value: nickIc,              inline: true },
+            { name: 'Kto',       value: '<@' + interaction.user.id + '>', inline: true },
             { name: 'Skad',      value: source,              inline: true },
           )
-          .setFooter({ text: 'Dodal: ' + interaction.user.username })
           .setTimestamp()],
       });
       await updateStorageMessage(interaction.client);
@@ -297,8 +286,9 @@ module.exports = {
         .addFields(
           { name: 'Przedmiot', value: item,   inline: true },
           { name: 'Ilosc',     value: '+' + qty, inline: true },
-          { name: 'Nick IC',   value: nickIc, inline: true },
+          { name: 'Skad',      value: source, inline: true },
           { name: 'Discord',   value: '<@' + interaction.user.id + '>', inline: true },
+          { name: 'Nick',      value: nickIc, inline: true },
         ).setTimestamp());
       return;
     }
@@ -306,7 +296,7 @@ module.exports = {
     if (sub === 'wyjmij') {
       const item   = interaction.options.getString('przedmiot');
       const qty    = interaction.options.getInteger('ilosc');
-      const nickIc = interaction.options.getString('nick_ic');
+      const nickIc = interaction.member.displayName;
       const reason = interaction.options.getString('powod') || 'Nie podano';
       const result = await removeStorageItem(item, qty, nickIc, interaction.user.id, reason);
       if (!result.success) {
@@ -325,10 +315,9 @@ module.exports = {
             { name: 'Przedmiot',  value: item,                                  inline: true },
             { name: 'Pobrano',    value: '-' + qty + ' szt.',                   inline: true },
             { name: 'Pozostalo',  value: '**' + result.newQuantity + ' szt.**', inline: true },
-            { name: 'Nick IC',    value: nickIc,                                inline: true },
+            { name: 'Kto',        value: '<@' + interaction.user.id + '>',        inline: true },
             { name: 'Powod',      value: reason,                                inline: true },
           )
-          .setFooter({ text: 'Pobral: ' + interaction.user.username })
           .setTimestamp()],
       });
       await updateStorageMessage(interaction.client);
@@ -337,8 +326,9 @@ module.exports = {
         .addFields(
           { name: 'Przedmiot', value: item,   inline: true },
           { name: 'Ilosc',     value: '-' + qty, inline: true },
-          { name: 'Nick IC',   value: nickIc, inline: true },
+          { name: 'Powod',     value: reason, inline: true },
           { name: 'Discord',   value: '<@' + interaction.user.id + '>', inline: true },
+          { name: 'Nick',      value: nickIc, inline: true },
         ).setTimestamp());
       return;
     }
