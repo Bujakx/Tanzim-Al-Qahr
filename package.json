@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "deploy": "node deploy-commands.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "setup-channels": "node scripts/sendSetup.js"
   },
   "dependencies": {
     "discord.js": "^14.16.3",

@@ -1,5 +1,6 @@
-// Hierarchia rang od najniższej (0) do najwyższej (7)
+// Hierarchia rang od najniższej (0) do najwyższej (8)
 const HIERARCHY = [
+  { name: 'Mustajad',  id: '1497209983610392666', description: 'kandydat',              role: 'Kandydat — przechodzi proces rekrutacji i jest obserwowany',             emoji: '🔎' },
   { name: 'Jadid',     id: '1496623783853686855', description: 'nowy kandydat',        role: 'Nowo przyjęty — zapoznaje się z organizacją i zasadami',                 emoji: '🌑' },
   { name: 'Talib',    id: '1496623621056106689',  description: 'nowicjusz',             role: 'Na próbie — uczy się i musi wykazać lojalność oraz zaangażowanie',       emoji: '📜' },
   { name: 'Jundi',    id: '1496623537400709281',  description: 'szeregowy',             role: 'Pełnoprawny żołnierz — uczestniczy w operacjach i zadaniach org.',       emoji: '⚔️' },
@@ -9,6 +10,8 @@ const HIERARCHY = [
   { name: 'Rais',     id: '1496623113532608512',  description: 'zastępca przywódcy',    role: 'Drugi w hierarchii — zarządza organizacją pod nieobecność szefa',        emoji: '💎' },
   { name: "Al-Qa'id", id: '1496622820975968357',  description: 'przywódca',             role: 'Przywódca organizacji — podejmuje ostateczne decyzje, absolutna władza', emoji: '👑' },
 ];
+// Indeksy rang w HIERARCHY:
+// 0=Mustajad  1=Jadid  2=Talib  3=Jundi  4=Hafiz  5=Amir  6=Nazir  7=Rais  8=Al-Qa'id
 
 // Role uprawnione do awansów / degradacji (szef + zastępca)
 const MANAGEMENT_ROLES = [

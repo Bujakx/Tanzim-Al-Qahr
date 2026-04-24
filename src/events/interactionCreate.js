@@ -176,12 +176,10 @@ module.exports = {
 
       await interaction.update({ embeds: [resolvedEmbed], components: [] });
 
-      // Nadaj rolę Jadid jeśli przyjęty
+      // Nadaj rangę Mustajad jeśli przyjęty
       if (isAccept && candidateMember) {
-        const jadidRoleId = process.env.ROLE_JADID;
-        const kandydatRoleId = process.env.ROLE_KANDYDAT;
-        if (jadidRoleId) await setRank(candidateMember, jadidRoleId);
-        if (kandydatRoleId) await candidateMember.roles.remove(kandydatRoleId).catch(() => {});
+        const mustajadRoleId = process.env.ROLE_MUSTAJAD;
+        if (mustajadRoleId) await setRank(candidateMember, mustajadRoleId).catch(() => {});
       }
 
       // DM dla kandydata
@@ -195,7 +193,7 @@ module.exports = {
                   ? `${EMOJI.CHECK} Twoje podanie zostało przyjęte!`
                   : `${EMOJI.CROSS} Twoje podanie zostało odrzucone`)
                 .setDescription(isAccept
-                  ? '🎉 Gratulujemy! Zostałeś/aś przyjęty/a do **Tanzim Al-Qahr**!\nZostała Ci nadana ranga **Jadid**. Witamy w organizacji!'
+                  ? '🎉 Gratulujemy! Zostałeś/aś przyjęty/a do **Tanzim Al-Qahr**!\nZostała Ci nadana ranga **Mustajad**. Witamy w organizacji!'
                   : 'Niestety Twoje podanie do **Tanzim Al-Qahr** nie zostało zaakceptowane.\nMożesz spróbować ponownie w przyszłości.')
                 .setTimestamp(),
             ],

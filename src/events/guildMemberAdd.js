@@ -6,11 +6,11 @@ module.exports = {
   once: false,
 
   async execute(member) {
-    const kandydatRoleId = process.env.ROLE_KANDYDAT;
+    const mustajadRoleId = process.env.ROLE_MUSTAJAD;
 
-    // Nadaj rolę Kandydat
-    if (kandydatRoleId) {
-      await member.roles.add(kandydatRoleId).catch(() => {});
+    // Nadaj rangę Mustajad (kandydat) nowym członkom serwera
+    if (mustajadRoleId) {
+      await member.roles.add(mustajadRoleId).catch(() => {});
     }
 
     // ============================
