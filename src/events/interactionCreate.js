@@ -180,11 +180,30 @@ module.exports = {
       if (isAccept && candidateMember) {
         const mustajadRoleId = process.env.ROLE_MUSTAJAD;
         const kandydatRoleId = process.env.ROLE_KANDYDAT;
+        // Pobierz świeżego membera żeby mieć aktualny cache ról
+        const freshMember = await interaction.guild.members.fetch(app.user_id).catch(() => candidateMember);
+        let roleErrors = [];
         if (mustajadRoleId) {
-          await candidateMember.roles.add(mustajadRoleId).catch(err => console.error('[REKRUTACJA] Nie udalo sie nadac Mustajad:', err.message));
+          try {
+            await freshMember.roles.add(mustajadRoleId);
+          } catch (err) {
+            console.error('[REKRUTACJA] Nie udalo sie nadac Mustajad:', err.message);
+            roleErrors.push('❌ Nie udało się nadać rangi Mustajad (`' + mustajadRoleId + '`): ' + err.message);
+          }
         }
         if (kandydatRoleId) {
-          await candidateMember.roles.remove(kandydatRoleId).catch(err => console.error('[REKRUTACJA] Nie udalo sie zdjac Kandydat:', err.message));
+          try {
+            await freshMember.roles.remove(kandydatRoleId);
+          } catch (err) {
+            console.error('[REKRUTACJA] Nie udalo sie zdjac Kandydat:', err.message);
+            roleErrors.push('❌ Nie udało się zdjąć rangi Kandydat: ' + err.message);
+          }
+        }
+        if (roleErrors.length) {
+          await interaction.followUp({
+            content: '⚠️ **Problem z rolami:**\n' + roleErrors.join('\n') + '\nNadaj rangę ręcznie!',
+            flags: 64,
+          }).catch(() => {});
         }
       }
 
