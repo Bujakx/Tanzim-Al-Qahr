@@ -176,10 +176,12 @@ module.exports = {
 
       await interaction.update({ embeds: [resolvedEmbed], components: [] });
 
-      // Nadaj rangę Mustajad jeśli przyjęty
+      // Nadaj rangę Mustajad i zdejmij Kandydat jeśli przyjęty
       if (isAccept && candidateMember) {
         const mustajadRoleId = process.env.ROLE_MUSTAJAD;
+        const kandydatRoleId = process.env.ROLE_KANDYDAT;
         if (mustajadRoleId) await setRank(candidateMember, mustajadRoleId).catch(() => {});
+        if (kandydatRoleId) await candidateMember.roles.remove(kandydatRoleId).catch(() => {});
       }
 
       // DM dla kandydata
