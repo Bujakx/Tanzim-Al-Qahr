@@ -179,16 +179,17 @@ module.exports = {
       // Nadaj rangę Mustajad i zdejmij Kandydat jeśli przyjęty
       if (isAccept && candidateMember) {
         const mustajadRoleId = process.env.ROLE_MUSTAJAD;
+        const czlonekOrgRoleId = process.env.ROLE_CZLONEK_ORG;
         const kandydatRoleId = process.env.ROLE_KANDYDAT;
         // Pobierz świeżego membera żeby mieć aktualny cache ról
         const freshMember = await interaction.guild.members.fetch(app.user_id).catch(() => candidateMember);
         let roleErrors = [];
-        if (mustajadRoleId) {
+        for (const roleId of [mustajadRoleId, czlonekOrgRoleId].filter(Boolean)) {
           try {
-            await freshMember.roles.add(mustajadRoleId);
+            await freshMember.roles.add(roleId);
           } catch (err) {
-            console.error('[REKRUTACJA] Nie udalo sie nadac Mustajad:', err.message);
-            roleErrors.push('❌ Nie udało się nadać rangi Mustajad (`' + mustajadRoleId + '`): ' + err.message);
+            console.error('[REKRUTACJA] Nie udalo sie nadac roli', roleId, err.message);
+            roleErrors.push('❌ Nie udało się nadać roli `' + roleId + '`: ' + err.message);
           }
         }
         if (kandydatRoleId) {
