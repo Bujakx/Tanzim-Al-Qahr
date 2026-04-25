@@ -180,8 +180,12 @@ module.exports = {
       if (isAccept && candidateMember) {
         const mustajadRoleId = process.env.ROLE_MUSTAJAD;
         const kandydatRoleId = process.env.ROLE_KANDYDAT;
-        if (mustajadRoleId) await setRank(candidateMember, mustajadRoleId).catch(() => {});
-        if (kandydatRoleId) await candidateMember.roles.remove(kandydatRoleId).catch(() => {});
+        if (mustajadRoleId) {
+          await candidateMember.roles.add(mustajadRoleId).catch(err => console.error('[REKRUTACJA] Nie udalo sie nadac Mustajad:', err.message));
+        }
+        if (kandydatRoleId) {
+          await candidateMember.roles.remove(kandydatRoleId).catch(err => console.error('[REKRUTACJA] Nie udalo sie zdjac Kandydat:', err.message));
+        }
       }
 
       // DM dla kandydata

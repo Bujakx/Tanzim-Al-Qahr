@@ -12,7 +12,7 @@ module.exports = {
     // Nadaj rangi nowym członkom serwera
     const rolesToAdd = [mustajadRoleId, kandydatRoleId].filter(Boolean);
     if (rolesToAdd.length) {
-      await member.roles.add(rolesToAdd).catch(() => {});
+      await member.roles.add(rolesToAdd).catch(err => console.error('[guildMemberAdd] Nie udalo sie nadac rang:', err.message));
     }
 
     // ============================

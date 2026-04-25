@@ -101,11 +101,9 @@ async function setRank(guildMember, newRankId) {
   const rankIds = HIERARCHY.map(r => r.id);
   const toRemove = rankIds.filter(id => id !== newRankId && guildMember.roles.cache.has(id));
   for (const id of toRemove) {
-    await guildMember.roles.remove(id).catch(() => {});
+    await guildMember.roles.remove(id).catch(err => console.error('[setRank] Nie udalo sie usunac roli', id, err.message));
   }
-  if (!guildMember.roles.cache.has(newRankId)) {
-    await guildMember.roles.add(newRankId).catch(() => {});
-  }
+  await guildMember.roles.add(newRankId).catch(err => console.error('[setRank] Nie udalo sie nadac roli', newRankId, err.message));
 }
 
 /**
