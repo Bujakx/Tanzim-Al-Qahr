@@ -1,58 +1,95 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const {
+  SlashCommandBuilder, EmbedBuilder, ActionRowBuilder,
+  ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle,
+} = require('discord.js');
 const { setNumer, removeNumer, getNumer, getAllNumery, getSetting, setSetting } = require('../../database/database');
-const { HIERARCHY } = require('../../utils/ranks');
+const { isManagement, HIERARCHY } = require('../../utils/ranks');
 const { errorEmbed } = require('../../utils/helpers');
 const { COLORS, EMOJI } = require('../../utils/constants');
 
-// Buduje embed z listą numerów pogrupowanych wg hierarchii (od najwyższej rangi)
+function buildActionRow() {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('numer_dodaj').setLabel('➕  Dodaj').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId('numer_zmien').setLabel('✏️  Zmień').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('numer_usun').setLabel('🗑️  Usuń').setStyle(ButtonStyle.Danger),
+  );
+}
+
+function buildNumerModal(customId, title) {
+  const modal = new ModalBuilder().setCustomId(customId).setTitle(title);
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(
+      new TextInputBuilder()
+        .setCustomId('numer')
+        .setLabel('Numer (3-5 cyfr)')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMinLength(3)
+        .setMaxLength(5)
+        .setPlaceholder('np. 00042')
+    ),
+    new ActionRowBuilder().addComponents(
+      new TextInputBuilder()
+        .setCustomId('imie_nazwisko')
+        .setLabel('Imię i nazwisko IC')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(60)
+        .setPlaceholder('np. Karim Al-Rashid')
+    ),
+  );
+  return modal;
+}
+
 async function buildNumerEmbed(guild) {
-  const allNumery = await getAllNumery(); // [{ user_id, numer }]
+  const allNumery = await getAllNumery(); // [{ user_id, numer, imie_nazwisko }]
+
   if (!allNumery.length) {
     return new EmbedBuilder()
       .setColor(0x1e1f22)
       .setTitle('📋  NUMERY ORGANIZACYJNE')
-      .setDescription('```\nBrak zarejestrowanych numerów.\n```')
+      .setDescription('```\nBrak zarejestrowanych numerów.\n```\n> Użyj przycisku **➕ Dodaj** aby zarejestrować numer.')
       .setFooter({ text: 'Tanzim Al-Qahr • Ostatnia aktualizacja' })
       .setTimestamp();
   }
 
-  // Pobierz wszystkich memberów z serwera (batch)
+  // Pobierz memberów z serwera (potrzebujemy ról do grupowania)
   const memberMap = new Map();
   for (const row of allNumery) {
     const member = await guild.members.fetch(row.user_id).catch(() => null);
     if (member) memberMap.set(row.user_id, member);
   }
 
-  // Grupuj wg rangi (od najwyższej HIERARCHY do najniższej, potem bez rangi org)
-  const groups = []; // { rank, entries: [{ numer, displayName }] }
+  // Grupuj wg rangi (od najwyższej do najniższej)
   const hierarchyDesc = [...HIERARCHY].reverse(); // Al-Qa'id → Mustajad
+  const groups = [];
+  const assignedIds = new Set();
 
   for (const rank of hierarchyDesc) {
     const entries = [];
     for (const row of allNumery) {
+      if (assignedIds.has(row.user_id)) continue;
       const member = memberMap.get(row.user_id);
       if (!member) continue;
       if (member.roles.cache.has(rank.id)) {
-        entries.push({ numer: row.numer, displayName: member.displayName });
+        entries.push({ numer: row.numer, imieNazwisko: row.imie_nazwisko || member.displayName });
+        assignedIds.add(row.user_id);
       }
     }
     if (entries.length) {
-      entries.sort((a, b) => a.numer.localeCompare(b.numer, undefined, { numeric: true }));
+      entries.sort((a, b) => Number(a.numer) - Number(b.numer) || a.numer.localeCompare(b.numer));
       groups.push({ rank, entries });
     }
   }
 
-  // Bez rangi org
-  const hierarchyIds = new Set(HIERARCHY.map(r => r.id));
+  // Pozostali (bez rangi org)
   const noRankEntries = [];
   for (const row of allNumery) {
-    const member = memberMap.get(row.user_id);
-    if (!member) continue;
-    const hasRank = HIERARCHY.some(r => member.roles.cache.has(r.id));
-    if (!hasRank) noRankEntries.push({ numer: row.numer, displayName: member.displayName });
+    if (assignedIds.has(row.user_id)) continue;
+    noRankEntries.push({ numer: row.numer, imieNazwisko: row.imie_nazwisko || row.user_id });
   }
   if (noRankEntries.length) {
-    noRankEntries.sort((a, b) => a.numer.localeCompare(b.numer, undefined, { numeric: true }));
+    noRankEntries.sort((a, b) => Number(a.numer) - Number(b.numer) || a.numer.localeCompare(b.numer));
     groups.push({ rank: { name: 'Inne', emoji: '•' }, entries: noRankEntries });
   }
 
@@ -63,10 +100,10 @@ async function buildNumerEmbed(guild) {
     .setTimestamp();
 
   for (const group of groups) {
-    const lines = group.entries.map(e => {
-      const num = e.numer.padEnd(8, ' ');
-      return `${num}  ${e.displayName}`;
-    });
+    const longestNum = Math.max(...group.entries.map(e => e.numer.length), 5);
+    const lines = group.entries.map(e =>
+      e.numer.padStart(longestNum, '0').padEnd(longestNum + 2, ' ') + e.imieNazwisko
+    );
     embed.addFields({
       name: `${group.rank.emoji}  ${group.rank.name}`,
       value: '```\n' + lines.join('\n') + '\n```',
@@ -88,11 +125,93 @@ async function updateNumerMessage(client) {
       if (old) await old.delete().catch(() => null);
     }
     const embed = await buildNumerEmbed(channel.guild);
-    const sent = await channel.send({ embeds: [embed] });
+    const sent = await channel.send({ embeds: [embed], components: [buildActionRow()] });
     await setSetting('numery_message_id', sent.id);
   } catch (err) {
     console.error('[NUMERY] Blad aktualizacji embeda:', err.message);
   }
+}
+
+async function handleButton(interaction) {
+  if (interaction.customId === 'numer_dodaj') {
+    return interaction.showModal(buildNumerModal('numer_modal_dodaj', 'Dodaj numer'));
+  }
+
+  if (interaction.customId === 'numer_zmien') {
+    const existing = await getNumer(interaction.user.id);
+    const modal = new ModalBuilder().setCustomId('numer_modal_zmien').setTitle('Zmień numer');
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId('numer')
+          .setLabel('Numer (3-5 cyfr)')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setMinLength(3)
+          .setMaxLength(5)
+          .setPlaceholder(existing?.numer || 'np. 00042')
+          .setValue(existing?.numer || '')
+      ),
+      new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId('imie_nazwisko')
+          .setLabel('Imię i nazwisko IC')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setMaxLength(60)
+          .setPlaceholder(existing?.imie_nazwisko || 'np. Karim Al-Rashid')
+          .setValue(existing?.imie_nazwisko || '')
+      ),
+    );
+    return interaction.showModal(modal);
+  }
+
+  if (interaction.customId === 'numer_usun') {
+    const existing = await getNumer(interaction.user.id);
+    if (!existing) {
+      return interaction.reply({ embeds: [errorEmbed('Nie masz zarejestrowanego numeru.')], flags: 64 });
+    }
+    await removeNumer(interaction.user.id);
+    await interaction.reply({
+      embeds: [new EmbedBuilder()
+        .setColor(COLORS.ERROR)
+        .setTitle('🗑️  Numer usunięty')
+        .setDescription('Twój numer **' + existing.numer + '** (' + existing.imie_nazwisko + ') został usunięty.')
+        .setTimestamp()],
+      flags: 64,
+    });
+    await updateNumerMessage(interaction.client);
+    return;
+  }
+}
+
+async function handleModal(interaction) {
+  const numer = interaction.fields.getTextInputValue('numer').trim();
+  const imieNazwisko = interaction.fields.getTextInputValue('imie_nazwisko').trim();
+
+  if (!/^\d{3,5}$/.test(numer)) {
+    return interaction.reply({ embeds: [errorEmbed('Numer musi zawierać od 3 do 5 cyfr (np. 042 lub 00042).')], flags: 64 });
+  }
+  if (!imieNazwisko) {
+    return interaction.reply({ embeds: [errorEmbed('Imię i nazwisko jest wymagane.')], flags: 64 });
+  }
+
+  await setNumer(interaction.user.id, numer, imieNazwisko);
+
+  const isChange = interaction.customId === 'numer_modal_zmien';
+  await interaction.reply({
+    embeds: [new EmbedBuilder()
+      .setColor(COLORS.SUCCESS)
+      .setTitle(EMOJI.CHECK + '  Numer ' + (isChange ? 'zmieniony' : 'dodany'))
+      .addFields(
+        { name: 'Numer', value: '**' + numer + '**', inline: true },
+        { name: 'Imię i nazwisko', value: imieNazwisko, inline: true },
+        { name: 'Discord', value: '<@' + interaction.user.id + '>', inline: true },
+      )
+      .setTimestamp()],
+    flags: 64,
+  });
+  await updateNumerMessage(interaction.client);
 }
 
 module.exports = {
@@ -100,17 +219,7 @@ module.exports = {
     .setName('numer')
     .setDescription('System numerów organizacyjnych')
     .addSubcommand(sub =>
-      sub.setName('setup')
-        .setDescription('(Zarząd) Wyślij live-embed numerów na ten kanał')
-    )
-    .addSubcommand(sub =>
-      sub.setName('ustaw')
-        .setDescription('Ustaw swój numer organizacyjny')
-        .addStringOption(o => o.setName('numer').setDescription('Twój numer (np. 001, 42)').setRequired(true).setMaxLength(10))
-    )
-    .addSubcommand(sub =>
-      sub.setName('usun')
-        .setDescription('Usuń swój numer z listy')
+      sub.setName('setup').setDescription('(Zarząd) Wyślij live-embed numerów na ten kanał')
     )
     .addSubcommand(sub =>
       sub.setName('sprawdz')
@@ -122,12 +231,11 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'setup') {
-      const { isManagement } = require('../../utils/ranks');
       if (!isManagement(interaction.member)) {
         return interaction.reply({ embeds: [errorEmbed('Tylko zarząd może ustawić embed numerów!')], flags: 64 });
       }
       const embed = await buildNumerEmbed(interaction.guild);
-      const sent = await interaction.channel.send({ embeds: [embed] });
+      const sent = await interaction.channel.send({ embeds: [embed], components: [buildActionRow()] });
       await setSetting('numery_message_id', sent.id);
       await setSetting('numery_channel_id', interaction.channelId);
       return interaction.reply({
@@ -136,51 +244,15 @@ module.exports = {
       });
     }
 
-    if (sub === 'ustaw') {
-      const numer = interaction.options.getString('numer').trim();
-      if (!/^[\w\-\.]+$/.test(numer)) {
-        return interaction.reply({ embeds: [errorEmbed('Numer może zawierać tylko cyfry, litery, myślnik i kropkę.')], flags: 64 });
-      }
-      await setNumer(interaction.user.id, numer);
-      await interaction.reply({
-        embeds: [new EmbedBuilder()
-          .setColor(COLORS.SUCCESS)
-          .setTitle(EMOJI.CHECK + '  Numer zapisany')
-          .setDescription('<@' + interaction.user.id + '> → **' + numer + '**')
-          .setTimestamp()],
-        flags: 64,
-      });
-      await updateNumerMessage(interaction.client);
-      return;
-    }
-
-    if (sub === 'usun') {
-      const existing = await getNumer(interaction.user.id);
-      if (!existing) {
-        return interaction.reply({ embeds: [errorEmbed('Nie masz zarejestrowanego numeru.')], flags: 64 });
-      }
-      await removeNumer(interaction.user.id);
-      await interaction.reply({
-        embeds: [new EmbedBuilder()
-          .setColor(COLORS.ERROR)
-          .setTitle('🗑️  Numer usunięty')
-          .setDescription('Twój numer **' + existing + '** został usunięty z listy.')
-          .setTimestamp()],
-        flags: 64,
-      });
-      await updateNumerMessage(interaction.client);
-      return;
-    }
-
     if (sub === 'sprawdz') {
       const target = interaction.options.getUser('osoba') || interaction.user;
-      const numer = await getNumer(target.id);
+      const row = await getNumer(target.id);
       return interaction.reply({
         embeds: [new EmbedBuilder()
           .setColor(0x1e1f22)
           .setTitle('🔍  Numer organizacyjny')
-          .setDescription(numer
-            ? '<@' + target.id + '> → **' + numer + '**'
+          .setDescription(row
+            ? '<@' + target.id + '> → **' + row.numer + '**  |  ' + row.imie_nazwisko
             : '<@' + target.id + '> nie ma zarejestrowanego numeru.')
           .setTimestamp()],
         flags: 64,
@@ -188,5 +260,8 @@ module.exports = {
     }
   },
 
+  handleButton,
+  handleModal,
   updateNumerMessage,
 };
+

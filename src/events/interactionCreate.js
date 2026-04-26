@@ -296,6 +296,22 @@ module.exports = {
       const { handleModal } = require('../commands/admin/pieniadze');
       return handleModal(interaction);
     }
+
+    // ============================
+    // BUTTON: Numery (dodaj / zmień / usuń)
+    // ============================
+    if (interaction.isButton() && interaction.customId.startsWith('numer_')) {
+      const { handleButton } = require('../commands/general/numer');
+      return handleButton(interaction);
+    }
+
+    // ============================
+    // MODAL: Numery
+    // ============================
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('numer_modal_')) {
+      const { handleModal } = require('../commands/general/numer');
+      return handleModal(interaction);
+    }
     } catch (err) {
       console.error('[InteractionCreate] Nieobsłużony błąd:', err);
       try {

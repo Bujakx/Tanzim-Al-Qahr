@@ -119,10 +119,16 @@ async function initDb() {
       balance_after    BIGINT       NOT NULL,
       created_at       DATETIME     DEFAULT CURRENT_TIMESTAMP
     ) CHARSET=utf8mb4`);    await conn.query(`CREATE TABLE IF NOT EXISTS numery (
-      user_id    VARCHAR(30)  PRIMARY KEY,
-      numer      VARCHAR(20)  NOT NULL,
-      updated_at DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) CHARSET=utf8mb4`);    console.log('✅ Baza danych (MySQL) gotowa!');
+      user_id       VARCHAR(30)  PRIMARY KEY,
+      numer         VARCHAR(20)  NOT NULL,
+      imie_nazwisko VARCHAR(60)  NOT NULL DEFAULT '',
+      updated_at    DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) CHARSET=utf8mb4`);
+    // Migracja: dodaj kolumne imie_nazwisko jesli jeszcze nie istnieje
+    await conn.query(`ALTER TABLE numery ADD COLUMN imie_nazwisko VARCHAR(60) NOT NULL DEFAULT ''`).catch(err => {
+      if (err.errno !== 1060) throw err; // 1060 = duplicate column - ignoruj
+    });
+    console.log('✅ Baza danych (MySQL) gotowa!');
   } finally {
     conn.release();
   }
@@ -396,10 +402,10 @@ async function getFinanceLog(limit = 10) {
 
 // --- Numery ---
 
-async function setNumer(userId, numer) {
+async function setNumer(userId, numer, imieNazwisko) {
   await pool.query(
-    'INSERT INTO numery (user_id, numer) VALUES (?, ?) ON DUPLICATE KEY UPDATE numer = ?',
-    [userId, numer, numer]
+    'INSERT INTO numery (user_id, numer, imie_nazwisko) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE numer = ?, imie_nazwisko = ?',
+    [userId, numer, imieNazwisko, numer, imieNazwisko]
   );
 }
 
@@ -408,12 +414,12 @@ async function removeNumer(userId) {
 }
 
 async function getNumer(userId) {
-  const [rows] = await pool.query('SELECT numer FROM numery WHERE user_id = ?', [userId]);
-  return rows[0]?.numer ?? null;
+  const [rows] = await pool.query('SELECT numer, imie_nazwisko FROM numery WHERE user_id = ?', [userId]);
+  return rows[0] ?? null; // { numer, imie_nazwisko } or null
 }
 
 async function getAllNumery() {
-  const [rows] = await pool.query('SELECT user_id, numer FROM numery ORDER BY numer ASC');
+  const [rows] = await pool.query('SELECT user_id, numer, imie_nazwisko FROM numery ORDER BY CAST(numer AS UNSIGNED) ASC, numer ASC');
   return rows;
 }
 
