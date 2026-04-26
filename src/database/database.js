@@ -118,8 +118,11 @@ async function initDb() {
       reason           TEXT,
       balance_after    BIGINT       NOT NULL,
       created_at       DATETIME     DEFAULT CURRENT_TIMESTAMP
-    ) CHARSET=utf8mb4`);
-    console.log('✅ Baza danych (MySQL) gotowa!');
+    ) CHARSET=utf8mb4`);    await conn.query(`CREATE TABLE IF NOT EXISTS numery (
+      user_id    VARCHAR(30)  PRIMARY KEY,
+      numer      VARCHAR(20)  NOT NULL,
+      updated_at DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) CHARSET=utf8mb4`);    console.log('✅ Baza danych (MySQL) gotowa!');
   } finally {
     conn.release();
   }
@@ -391,6 +394,29 @@ async function getFinanceLog(limit = 10) {
   return rows;
 }
 
+// --- Numery ---
+
+async function setNumer(userId, numer) {
+  await pool.query(
+    'INSERT INTO numery (user_id, numer) VALUES (?, ?) ON DUPLICATE KEY UPDATE numer = ?',
+    [userId, numer, numer]
+  );
+}
+
+async function removeNumer(userId) {
+  await pool.query('DELETE FROM numery WHERE user_id = ?', [userId]);
+}
+
+async function getNumer(userId) {
+  const [rows] = await pool.query('SELECT numer FROM numery WHERE user_id = ?', [userId]);
+  return rows[0]?.numer ?? null;
+}
+
+async function getAllNumery() {
+  const [rows] = await pool.query('SELECT user_id, numer FROM numery ORDER BY numer ASC');
+  return rows;
+}
+
 module.exports = {
   pool,
   initDb,
@@ -425,5 +451,9 @@ module.exports = {
   depositMoney,
   withdrawMoney,
   getFinanceLog,
+  setNumer,
+  removeNumer,
+  getNumer,
+  getAllNumery,
 };
 
