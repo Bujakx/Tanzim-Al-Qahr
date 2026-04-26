@@ -21,12 +21,12 @@ function buildNumerModal(customId, title) {
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
         .setCustomId('numer')
-        .setLabel('Numer (3-5 cyfr)')
+        .setLabel('Numer telefonu IC')
         .setStyle(TextInputStyle.Short)
         .setRequired(true)
-        .setMinLength(3)
-        .setMaxLength(5)
-        .setPlaceholder('np. 00042')
+        .setMinLength(12)
+        .setMaxLength(12)
+        .setPlaceholder('np. (321) 01420')
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
@@ -77,7 +77,7 @@ async function buildNumerEmbed(guild) {
       }
     }
     if (entries.length) {
-      entries.sort((a, b) => Number(a.numer) - Number(b.numer) || a.numer.localeCompare(b.numer));
+      entries.sort((a, b) => a.numer.localeCompare(b.numer));
       groups.push({ rank, entries });
     }
   }
@@ -89,7 +89,7 @@ async function buildNumerEmbed(guild) {
     noRankEntries.push({ numer: row.numer, imieNazwisko: row.imie_nazwisko || row.user_id });
   }
   if (noRankEntries.length) {
-    noRankEntries.sort((a, b) => Number(a.numer) - Number(b.numer) || a.numer.localeCompare(b.numer));
+    noRankEntries.sort((a, b) => a.numer.localeCompare(b.numer));
     groups.push({ rank: { name: 'Inne', emoji: '•' }, entries: noRankEntries });
   }
 
@@ -100,9 +100,8 @@ async function buildNumerEmbed(guild) {
     .setTimestamp();
 
   for (const group of groups) {
-    const longestNum = Math.max(...group.entries.map(e => e.numer.length), 5);
     const lines = group.entries.map(e =>
-      e.numer.padStart(longestNum, '0').padEnd(longestNum + 2, ' ') + e.imieNazwisko
+      e.numer.padEnd(14, ' ') + e.imieNazwisko
     );
     embed.addFields({
       name: `${group.rank.emoji}  ${group.rank.name}`,
@@ -144,12 +143,12 @@ async function handleButton(interaction) {
       new ActionRowBuilder().addComponents(
         new TextInputBuilder()
           .setCustomId('numer')
-          .setLabel('Numer (3-5 cyfr)')
+          .setLabel('Numer telefonu IC')
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
-          .setMinLength(3)
-          .setMaxLength(5)
-          .setPlaceholder(existing?.numer || 'np. 00042')
+          .setMinLength(12)
+          .setMaxLength(12)
+          .setPlaceholder(existing?.numer || 'np. (321) 01420')
           .setValue(existing?.numer || '')
       ),
       new ActionRowBuilder().addComponents(
@@ -189,8 +188,8 @@ async function handleModal(interaction) {
   const numer = interaction.fields.getTextInputValue('numer').trim();
   const imieNazwisko = interaction.fields.getTextInputValue('imie_nazwisko').trim();
 
-  if (!/^\d{3,5}$/.test(numer)) {
-    return interaction.reply({ embeds: [errorEmbed('Numer musi zawierać od 3 do 5 cyfr (np. 042 lub 00042).')], flags: 64 });
+  if (!/^\(\d{3}\) \d{5}$/.test(numer)) {
+    return interaction.reply({ embeds: [errorEmbed('Nieprawidłowy format numeru. Wpisz w formacie: **(321) 01420**')], flags: 64 });
   }
   if (!imieNazwisko) {
     return interaction.reply({ embeds: [errorEmbed('Imię i nazwisko jest wymagane.')], flags: 64 });
