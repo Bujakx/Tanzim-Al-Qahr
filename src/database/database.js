@@ -413,6 +413,12 @@ async function removeNumer(userId) {
   await pool.query('DELETE FROM numery WHERE user_id = ?', [userId]);
 }
 
+async function removeNumerByName(imieNazwisko) {
+  // Zwraca liczbe usuniętych wierszy
+  const [result] = await pool.query('DELETE FROM numery WHERE LOWER(imie_nazwisko) = LOWER(?)', [imieNazwisko]);
+  return result.affectedRows;
+}
+
 async function getNumer(userId) {
   const [rows] = await pool.query('SELECT numer, imie_nazwisko FROM numery WHERE user_id = ?', [userId]);
   return rows[0] ?? null; // { numer, imie_nazwisko } or null
@@ -459,6 +465,7 @@ module.exports = {
   getFinanceLog,
   setNumer,
   removeNumer,
+  removeNumerByName,
   getNumer,
   getAllNumery,
 };

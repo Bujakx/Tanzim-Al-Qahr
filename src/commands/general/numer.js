@@ -2,7 +2,7 @@ const {
   SlashCommandBuilder, EmbedBuilder, ActionRowBuilder,
   ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require('discord.js');
-const { setNumer, removeNumer, getNumer, getAllNumery, getSetting, setSetting } = require('../../database/database');
+const { setNumer, removeNumer, removeNumerByName, getNumer, getAllNumery, getSetting, setSetting } = require('../../database/database');
 const { isManagement, HIERARCHY } = require('../../utils/ranks');
 const { errorEmbed } = require('../../utils/helpers');
 const { COLORS, EMOJI } = require('../../utils/constants');
@@ -233,6 +233,11 @@ module.exports = {
       sub.setName('setup').setDescription('(Zarząd) Wyślij live-embed numerów na ten kanał')
     )
     .addSubcommand(sub =>
+      sub.setName('usun-gracza')
+        .setDescription('(Zarząd) Usuń numer wskazanej osoby po imieniu i nazwisku')
+        .addStringOption(o => o.setName('imie_nazwisko').setDescription('Imię i nazwisko IC (np. Karim Al-Rashid)').setRequired(true))
+    )
+    .addSubcommand(sub =>
       sub.setName('sprawdz')
         .setDescription('Sprawdź czyjś numer')
         .addUserOption(o => o.setName('osoba').setDescription('Osoba do sprawdzenia').setRequired(false))
@@ -240,6 +245,28 @@ module.exports = {
 
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
+
+    if (sub === 'usun-gracza') {
+      if (!isManagement(interaction.member)) {
+        return interaction.reply({ embeds: [errorEmbed('Tylko zarząd może usuwać numery innych graczy!')], flags: 64 });
+      }
+      const imieNazwisko = interaction.options.getString('imie_nazwisko').trim();
+      const deleted = await removeNumerByName(imieNazwisko);
+      if (!deleted) {
+        return interaction.reply({ embeds: [errorEmbed('Nie znaleziono numeru dla: **' + imieNazwisko + '**')], flags: 64 });
+      }
+      await interaction.reply({
+        embeds: [new EmbedBuilder()
+          .setColor(COLORS.ERROR)
+          .setTitle('🗑️  Numer usunięty przez zarząd')
+          .setDescription('Usunięto numer gracza: **' + imieNazwisko + '**')
+          .addFields({ name: 'Wykonał', value: '<@' + interaction.user.id + '>', inline: true })
+          .setTimestamp()],
+        flags: 64,
+      });
+      await updateNumerMessage(interaction.client);
+      return;
+    }
 
     if (sub === 'setup') {
       if (!isManagement(interaction.member)) {
