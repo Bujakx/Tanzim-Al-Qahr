@@ -105,6 +105,7 @@ module.exports = {
             );
 
           updateHierarchyEmbed(interaction.client).catch(() => {});
+          require('../general/numer').updateNumerMessage(interaction.client).catch(() => {});
 
           try {
             const promCh = process.env.PROMOTIONS_CHANNEL_ID

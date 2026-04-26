@@ -60,8 +60,9 @@ module.exports = {
 
     await setRank(targetMember, newRank.id);
 
-    // Auto-aktualizacja hierarchii
+    // Auto-aktualizacja hierarchii i numerów
     updateHierarchyEmbed(interaction.client).catch(() => {});
+    require('../general/numer').updateNumerMessage(interaction.client).catch(() => {});
 
     const oldRankName = currentRankData ? currentRankData.rank.name : 'Brak';
 
