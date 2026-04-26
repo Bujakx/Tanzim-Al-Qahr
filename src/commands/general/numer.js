@@ -24,9 +24,9 @@ function buildNumerModal(customId, title) {
         .setLabel('Numer telefonu IC')
         .setStyle(TextInputStyle.Short)
         .setRequired(true)
-        .setMinLength(12)
+        .setMinLength(8)
         .setMaxLength(12)
-        .setPlaceholder('np. (321) 01420')
+        .setPlaceholder('3 cyfry, spacja, 5 cyfr  np. 32101420')
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
@@ -35,7 +35,7 @@ function buildNumerModal(customId, title) {
         .setStyle(TextInputStyle.Short)
         .setRequired(true)
         .setMaxLength(60)
-        .setPlaceholder('np. Karim Al-Rashid')
+        .setPlaceholder('np. karim al-rashid')
     ),
   );
   return modal;
@@ -146,9 +146,9 @@ async function handleButton(interaction) {
           .setLabel('Numer telefonu IC')
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
-          .setMinLength(12)
+          .setMinLength(8)
           .setMaxLength(12)
-          .setPlaceholder(existing?.numer || 'np. (321) 01420')
+          .setPlaceholder(existing?.numer || '3 cyfry, spacja, 5 cyfr  np. 32101420')
           .setValue(existing?.numer || '')
       ),
       new ActionRowBuilder().addComponents(
@@ -184,12 +184,24 @@ async function handleButton(interaction) {
   }
 }
 
-async function handleModal(interaction) {
-  const numer = interaction.fields.getTextInputValue('numer').trim();
-  const imieNazwisko = interaction.fields.getTextInputValue('imie_nazwisko').trim();
+function capitalize(str) {
+  return str.replace(/\b\S/g, c => c.toUpperCase());
+}
 
-  if (!/^\(\d{3}\) \d{5}$/.test(numer)) {
-    return interaction.reply({ embeds: [errorEmbed('Nieprawidłowy format numeru. Wpisz w formacie: **(321) 01420**')], flags: 64 });
+function parseNumer(raw) {
+  // Akceptuj: '32101420' (8 cyfr) lub '(321) 01420' (już sformatowany)
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length !== 8) return null;
+  return '(' + digits.slice(0, 3) + ') ' + digits.slice(3);
+}
+
+async function handleModal(interaction) {
+  const rawNumer = interaction.fields.getTextInputValue('numer').trim();
+  const imieNazwisko = capitalize(interaction.fields.getTextInputValue('imie_nazwisko').trim());
+
+  const numer = parseNumer(rawNumer);
+  if (!numer) {
+    return interaction.reply({ embeds: [errorEmbed('Nieprawidłowy numer. Wpisz 8 cyfr: **32101420** albo **(321) 01420**')], flags: 64 });
   }
   if (!imieNazwisko) {
     return interaction.reply({ embeds: [errorEmbed('Imię i nazwisko jest wymagane.')], flags: 64 });
