@@ -6,13 +6,11 @@ module.exports = {
   once: false,
 
   async execute(member) {
-    const mustajadRoleId = process.env.ROLE_MUSTAJAD;
     const kandydatRoleId = process.env.ROLE_KANDYDAT;
 
-    // Nadaj rangi nowym członkom serwera
-    const rolesToAdd = [mustajadRoleId, kandydatRoleId].filter(Boolean);
-    if (rolesToAdd.length) {
-      await member.roles.add(rolesToAdd).catch(err => console.error('[guildMemberAdd] Nie udalo sie nadac rang:', err.message));
+    // Nadaj tylko rangę Kandydat przy dołączeniu — Mustajad nadawany po akceptacji podania
+    if (kandydatRoleId) {
+      await member.roles.add(kandydatRoleId).catch(err => console.error('[guildMemberAdd] Nie udalo sie nadac Kandydat:', err.message));
     }
 
     // ============================
