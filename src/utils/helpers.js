@@ -165,14 +165,14 @@ async function updateKomendyEmbed(client) {
     const embed1 = new EmbedBuilder()
       .setColor(COLORS.PRIMARY)
       .setTitle('🌑 Tanzim Al-Qahr — Panel Zarządu')
-      .setDescription('Dostęp: **Al-Qaʼid**, **Rais**, **Nazir** oraz administratorzy.\n\u200b')
+      .setDescription('Dostęp: **Al-Qaʼid**, **Rais** (i **Nazir** dla plusów/minusów).\n\u200b')
       .addFields(
         {
           name: '🎖️ Awanse & Degradacje',
           value:
             '`/awans @nick ranga [powod]` — awansuj membera\n' +
             '`/degradacja @nick ranga [powod]` — zdegraduj membera\n' +
-            '> Ranga wybierana z listy. Zapis w bazie + DM do membera + kanał awansów.',
+            '`/wyrzuc @nick powod` — wyrzuć membera z organizacji',
         },
         { name: '\u200b', value: '\u200b' },
         {
@@ -193,29 +193,45 @@ async function updateKomendyEmbed(client) {
         },
         { name: '\u200b', value: '\u200b' },
         {
-          name: '📋 Organizacja',
+          name: '📦 Szafka organizacyjna',
+          value:
+            '`/szafka setup` — wyślij live-embed szafki na bieżący kanał\n' +
+            '`/szafka stan` — pokaż aktualny stan szafki (prywatnie)\n' +
+            '`/szafka skoryguj` — ręczna korekta ilości przedmiotów\n' +
+            '> Przyciski na embedzie: **⬆️ Wloz** (bulk) · **⬇️ Wyjmij** (select)',
+        },
+        { name: '\u200b', value: '\u200b' },
+        {
+          name: '💰 Finanse & Składki',
+          value:
+            '`/pieniadze setup` — wyślij live-embed kasy na bieżący kanał\n' +
+            '`/pieniadze stan` — pokaż stan kasy (prywatnie)\n' +
+            '> Przyciski na embedzie: **⬆️ Wpłać** · **⬇️ Wypłać**\n' +
+            '\u200b\n' +
+            '`/skladka setup` — wyślij live-embed składek na bieżący kanał\n' +
+            '`/skladka zaznacz @nick [nick_ic] [tydzien]` — zaznacz wpłatę 10 000 $\n' +
+            '`/skladka odznacz @nick [tydzien]` — odznacz wpłatę\n' +
+            '> Przyciski na embedzie: **◀ Poprzedni · Bieżący · Następny ▶**',
+        },
+        { name: '\u200b', value: '\u200b' },
+        {
+          name: '📞 Numery telefonów',
+          value:
+            '`/numer setup` — wyślij live-embed numerów na bieżący kanał\n' +
+            '`/numer sprawdz` — pokaż embed numerów (prywatnie)\n' +
+            '`/numer usun-gracza imie_nazwisko` — usuń numer gracza (zarząd)\n' +
+            '> Przyciski na embedzie: **➕ Dodaj · ✏️ Zmień · 🗑️ Usuń**',
+        },
+        { name: '\u200b', value: '\u200b' },
+        {
+          name: '📋 Panel',
           value:
             '`/hierarchia` — odśwież embed hierarchii rang\n' +
             '`/komendy` — odśwież tę listę\n' +
             '`/ogloszenie` — wyślij ogłoszenie na kanał ogłoszeń',
         },
       )
-      .setFooter({ text: 'Tanzim Al-Qahr | Dokumentacja wewnętrzna • Auto-hierarchia aktywna' })
-      .setTimestamp();
-
-    const embed2 = new EmbedBuilder()
-      .setColor(COLORS.DARK)
-      .setTitle('👥 Komendy ogólne')
-      .setDescription('Dostępne dla wszystkich memberów serwera.')
-      .addFields(
-        {
-          name: 'Informacje',
-          value:
-            '`/profil [@nick]` — profil membera (ranga, plusy, minusy, warny)\n' +
-            '`/ranking` — top 10 rang i plusów\n' +
-            '`/help` — podstawowa pomoc',
-        },
-      )
+      .setFooter({ text: 'Tanzim Al-Qahr | Dokumentacja wewnętrzna' })
       .setTimestamp();
 
     const msgs = await ch.messages.fetch({ limit: 20 }).catch(() => null);
@@ -223,13 +239,12 @@ async function updateKomendyEmbed(client) {
       ? [...msgs.values()].filter(m => m.author.id === client.user.id).sort((a, b) => a.createdTimestamp - b.createdTimestamp)
       : [];
 
-    if (botMsgs.length >= 2) {
+    if (botMsgs.length >= 1) {
       await botMsgs[0].edit({ embeds: [embed1] }).catch(() => {});
-      await botMsgs[1].edit({ embeds: [embed2] }).catch(() => {});
+      // usun ewentualne dodatkowe stare wiadomosci bota
+      for (let i = 1; i < botMsgs.length; i++) { await botMsgs[i].delete().catch(() => {}); }
     } else {
-      for (const m of botMsgs) { await m.delete().catch(() => {}); }
       await ch.send({ embeds: [embed1] });
-      await ch.send({ embeds: [embed2] });
     }
   } catch (err) {
     console.error('[updateKomendyEmbed]', err.message);
