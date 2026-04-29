@@ -75,6 +75,10 @@ module.exports = {
     const guild = client.guilds.cache.get(process.env.GUILD_ID);
     if (!guild) return;
 
+    // Pobierz wszystkich czlonkow do cache (raz przy starcie)
+    await guild.members.fetch().catch(err => console.warn('⚠️ guild.members.fetch:', err.message));
+    console.log('✅ Członkowie serwera załadowani do cache!');
+
     // Hierarchia
     await updateHierarchyEmbed(client);
     console.log('✅ Hierarchia wysłana na kanał!');
