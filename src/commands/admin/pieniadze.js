@@ -295,9 +295,6 @@ module.exports = {
           .setTimestamp()],
         flags: 64,
       });
-          )
-          .setTimestamp()],
-      });
       await updateFinanceMessage(interaction.client);
       await sendLog(interaction.client, new EmbedBuilder()
         .setColor(0x8b0000).setTitle('[FINANSE] Wyp\u0142ata')
