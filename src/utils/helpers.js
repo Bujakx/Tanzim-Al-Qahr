@@ -195,20 +195,20 @@ async function updateKomendyEmbed(client) {
         {
           name: '📦 Szafka organizacyjna',
           value:
-            '`/szafka setup` — wyślij live-embed szafki na bieżący kanał\n' +
-            '`/szafka stan` — pokaż aktualny stan szafki (prywatnie)\n' +
             '`/szafka skoryguj` — ręczna korekta ilości przedmiotów\n' +
+            '`/szafka stan` — pokaż aktualny stan szafki (prywatnie)\n' +
             '> Przyciski na embedzie: **⬆️ Wloz** (bulk) · **⬇️ Wyjmij** (select)',
         },
         { name: '\u200b', value: '\u200b' },
         {
-          name: '💰 Finanse & Składki',
+          name: '💰 Finanse',
           value:
-            '`/pieniadze setup` — wyślij live-embed kasy na bieżący kanał\n' +
-            '`/pieniadze stan` — pokaż stan kasy (prywatnie)\n' +
-            '> Przyciski na embedzie: **⬆️ Wpłać** · **⬇️ Wypłać**\n' +
-            '\u200b\n' +
-            '`/skladka setup` — wyślij live-embed składek na bieżący kanał\n' +
+            '> Przyciski na embedzie: **⬆️ Wpłać** · **⬇️ Wypłać**',
+        },
+        { name: '\u200b', value: '\u200b' },
+        {
+          name: '📅 Składki tygodniowe',
+          value:
             '`/skladka zaznacz @nick [nick_ic] [tydzien]` — zaznacz wpłatę 10 000 $\n' +
             '`/skladka odznacz @nick [tydzien]` — odznacz wpłatę\n' +
             '> Przyciski na embedzie: **◀ Poprzedni · Bieżący · Następny ▶**',
@@ -217,18 +217,25 @@ async function updateKomendyEmbed(client) {
         {
           name: '📞 Numery telefonów',
           value:
-            '`/numer setup` — wyślij live-embed numerów na bieżący kanał\n' +
-            '`/numer sprawdz` — pokaż embed numerów (prywatnie)\n' +
-            '`/numer usun-gracza imie_nazwisko` — usuń numer gracza (zarząd)\n' +
+            '`/numer usun-gracza imie_nazwisko` — usuń numer gracza\n' +
             '> Przyciski na embedzie: **➕ Dodaj · ✏️ Zmień · 🗑️ Usuń**',
         },
         { name: '\u200b', value: '\u200b' },
         {
-          name: '📋 Panel',
+          name: '📣 Ogłoszenia',
           value:
-            '`/hierarchia` — odśwież embed hierarchii rang\n' +
-            '`/komendy` — odśwież tę listę\n' +
             '`/ogloszenie` — wyślij ogłoszenie na kanał ogłoszeń',
+        },
+        { name: '\u200b', value: '\u200b' },
+        {
+          name: '⚙️ Setup (tylko w razie potrzeby)',
+          value:
+            '`/szafka setup` — (re)wyślij embed szafki\n' +
+            '`/pieniadze setup` — (re)wyślij embed kasy\n' +
+            '`/skladka setup` — (re)wyślij embed składek\n' +
+            '`/numer setup` — (re)wyślij embed numerów\n' +
+            '`/hierarchia` — odśwież embed hierarchii rang\n' +
+            '`/komendy` — odśwież tę listę',
         },
       )
       .setFooter({ text: 'Tanzim Al-Qahr | Dokumentacja wewnętrzna' })
