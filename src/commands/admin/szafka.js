@@ -4,7 +4,7 @@ const {
   StringSelectMenuBuilder,
 } = require('discord.js');
 const {
-  addStorageItem, removeStorageItem, getStorage, getSetting, setSetting,
+  addStorageItem, removeStorageItem, setStorageItem, getStorage, getSetting, setSetting,
 } = require('../../database/database');
 const { isManagement, HIERARCHY } = require('../../utils/ranks');
 const { errorEmbed, sendLog } = require('../../utils/helpers');
@@ -66,6 +66,22 @@ async function updateStorageMessage(client) {
   } catch (err) {
     console.error('[SZAFKA] Nie udalo sie zaktualizowac embeda:', err.message);
   }
+}
+
+// Modal korekty stanu - pre-populowany aktualnym stanem
+function buildSkorygujModal(items) {
+  const value = items.map(i => i.item_name + ' ' + i.quantity).join('\n');
+  const modal = new ModalBuilder().setCustomId('szafka_modal_skoryguj').setTitle('Korekta stanu szafki');
+  const input = new TextInputBuilder()
+    .setCustomId('pozycje')
+    .setLabel('Stan (Nazwa Ilosc, kazdy w nowej linii)')
+    .setStyle(TextInputStyle.Paragraph)
+    .setRequired(true)
+    .setPlaceholder('Pistolet 5\nApteczka 10\nKamizelka 2')
+    .setMaxLength(4000);
+  if (value) input.setValue(value);
+  modal.addComponents(new ActionRowBuilder().addComponents(input));
+  return modal;
 }
 
 // Modal wkladania - BULK (paragraph)
@@ -219,6 +235,49 @@ async function handleModal(interaction) {
     return;
   }
 
+  // KOREKTA stanu (zarzad)
+  if (interaction.customId === 'szafka_modal_skoryguj') {
+    if (!isManagement(interaction.member)) {
+      return interaction.reply({ embeds: [errorEmbed('Tylko zarzad moze korygowac stan szafki!')], flags: 64 });
+    }
+    const raw   = interaction.fields.getTextInputValue('pozycje').trim();
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    const results = [];
+    const errors  = [];
+    for (const line of lines) {
+      const match = line.match(/^(.+?)\s+(\d+)$/);
+      if (!match) { errors.push('⚠️ Pominieto (zly format): `' + line + '`'); continue; }
+      const name = match[1].trim();
+      const qty  = parseInt(match[2], 10);
+      if (!name) { errors.push('⚠️ Pominieto: `' + line + '`'); continue; }
+      await setStorageItem(name, qty, nickIc, interaction.user.id);
+      results.push('`' + name + '` → ' + qty + ' szt.');
+    }
+    if (!results.length) {
+      return interaction.reply({ embeds: [errorEmbed('Zadna linijka nie miala poprawnego formatu.\nUzyj: `Nazwa Ilosc` np. `Pistolet 5`')], flags: 64 });
+    }
+    const desc = results.join('\n') + (errors.length ? '\n\n' + errors.join('\n') : '');
+    await interaction.reply({
+      embeds: [new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setTitle('🔧  Stan szafki skorygowany')
+        .setDescription(desc)
+        .addFields({ name: 'Kto', value: '<@' + interaction.user.id + '>', inline: true })
+        .setTimestamp()],
+      flags: 64,
+    });
+    await updateStorageMessage(interaction.client);
+    await sendLog(interaction.client, new EmbedBuilder()
+      .setColor(0x5865F2)
+      .setTitle('[SZAFKA] Korekta stanu')
+      .setDescription(results.join('\n'))
+      .addFields(
+        { name: 'Discord', value: '<@' + interaction.user.id + '>', inline: true },
+        { name: 'Nick',    value: nickIc, inline: true },
+      ).setTimestamp());
+    return;
+  }
+
   // WYJMIJ po select menu  (customId: szafka_modal_wyjmij_qty:Pistolet)
   if (interaction.customId.startsWith('szafka_modal_wyjmij_qty:')) {
     const item   = interaction.customId.split(':').slice(1).join(':');
@@ -248,6 +307,7 @@ async function handleModal(interaction) {
           { name: 'Powod',     value: reason,                                 inline: true },
         )
         .setTimestamp()],
+      flags: 64,
     });
     await updateStorageMessage(interaction.client);
     await sendLog(interaction.client, new EmbedBuilder()
@@ -273,6 +333,9 @@ module.exports = {
     )
     .addSubcommand(sub =>
       sub.setName('stan').setDescription('Pokaz aktualny stan szafki (tylko dla ciebie)')
+    )
+    .addSubcommand(sub =>
+      sub.setName('skoryguj').setDescription('(Zarzad) Reczna korekta ilosci przedmiotow w szafce')
     ),
 
   async execute(interaction) {
@@ -284,6 +347,14 @@ module.exports = {
       }
       const items = await getStorage();
       return interaction.reply({ embeds: [await buildStorageEmbed(items)], flags: 64 });
+    }
+
+    if (sub === 'skoryguj') {
+      if (!isManagement(interaction.member)) {
+        return interaction.reply({ embeds: [errorEmbed('Tylko zarzad moze korygowac stan szafki!')], flags: 64 });
+      }
+      const items = await getStorage();
+      return interaction.showModal(buildSkorygujModal(items));
     }
 
     if (sub === 'setup') {

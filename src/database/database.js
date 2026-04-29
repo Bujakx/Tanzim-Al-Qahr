@@ -341,6 +341,24 @@ async function removeStorageItem(itemName, quantity, userIc, userId, reason) {
   return { success: true, newQuantity: updated[0]?.quantity ?? 0 };
 }
 
+async function setStorageItem(itemName, quantity, userIc, userId) {
+  const [old] = await pool.query('SELECT quantity FROM storage WHERE item_name = ?', [itemName]);
+  const oldQty = old[0]?.quantity ?? 0;
+  if (quantity <= 0) {
+    await pool.query('DELETE FROM storage WHERE item_name = ?', [itemName]);
+  } else {
+    await pool.query(
+      'INSERT INTO storage (item_name, quantity) VALUES (?, ?) ON DUPLICATE KEY UPDATE quantity = ?',
+      [itemName, quantity, quantity]
+    );
+  }
+  await pool.query(
+    'INSERT INTO storage_log (item_name, action, quantity, user_ic, user_id, source_or_reason) VALUES (?, ?, ?, ?, ?, ?)',
+    [itemName, 'korekta', quantity, userIc, userId, 'Korekta: ' + oldQty + ' → ' + quantity]
+  );
+  return quantity;
+}
+
 async function getStorage() {
   const [rows] = await pool.query('SELECT * FROM storage WHERE quantity > 0 ORDER BY item_name ASC');
   return rows;
@@ -455,6 +473,7 @@ module.exports = {
   logPromotion,
   addStorageItem,
   removeStorageItem,
+  setStorageItem,
   getStorage,
   getStorageLog,
   getSetting,
