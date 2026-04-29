@@ -44,9 +44,18 @@ function shiftWeek(weekKey, delta) {
   return getWeekKey(shifted);
 }
 
+// Cache guild.members.fetch zeby nie odpytywac gateway zbyt czesto (rate limit opcode 8)
+const _membersFetchedAt = new Map(); // guildId -> timestamp
+const MEMBERS_CACHE_TTL = 5 * 60 * 1000; // 5 minut
+
 // Pobierz wszystkich czlonkow org (Jadid i wyzej, bez Mustajad)
 async function getOrgMembers(guild) {
-  await guild.members.fetch();
+  const now = Date.now();
+  const last = _membersFetchedAt.get(guild.id) || 0;
+  if (now - last > MEMBERS_CACHE_TTL) {
+    await guild.members.fetch();
+    _membersFetchedAt.set(guild.id, now);
+  }
   const orgRoleIds = new Set(HIERARCHY.slice(1).map(r => r.id));
   const members = [];
   guild.members.cache.forEach(m => {
