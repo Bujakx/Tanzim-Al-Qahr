@@ -274,8 +274,14 @@ module.exports = {
       return handleButton(interaction);
     }
 
+    // ============================    // SELECT: Szafka (wybór przedmiotu do wyjęcia)
     // ============================
-    // MODAL: Szafka
+    if (interaction.isStringSelectMenu() && interaction.customId === 'szafka_select_wyjmij') {
+      const { handleSelect } = require('../commands/admin/szafka');
+      return handleSelect(interaction);
+    }
+
+    // ============================    // MODAL: Szafka
     // ============================
     if (interaction.isModalSubmit() && interaction.customId.startsWith('szafka_modal_')) {
       const { handleModal } = require('../commands/admin/szafka');
