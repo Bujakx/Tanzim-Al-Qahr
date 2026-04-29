@@ -123,6 +123,7 @@ async function handleModal(interaction) {
           { name: 'Discord',     value: '<@' + interaction.user.id + '>', inline: true },
         )
         .setTimestamp()],
+      flags: 64,
     });
     await updateFinanceMessage(interaction.client);
     await sendLog(interaction.client, new EmbedBuilder()
@@ -161,6 +162,7 @@ async function handleModal(interaction) {
           { name: 'Discord',     value: '<@' + interaction.user.id + '>', inline: true },
         )
         .setTimestamp()],
+      flags: 64,
     });
     await updateFinanceMessage(interaction.client);
     await sendLog(interaction.client, new EmbedBuilder()
@@ -251,6 +253,7 @@ module.exports = {
             { name: 'Discord',   value: '<@' + interaction.user.id + '>', inline: true },
           )
           .setTimestamp()],
+        flags: 64,
       });
       await updateFinanceMessage(interaction.client);
       await sendLog(interaction.client, new EmbedBuilder()
@@ -288,6 +291,10 @@ module.exports = {
             { name: 'Imi\u0119 IC',   value: nickIc,                       inline: true },
             { name: 'Cel',       value: cel,                          inline: true },
             { name: 'Discord',   value: '<@' + interaction.user.id + '>', inline: true },
+          )
+          .setTimestamp()],
+        flags: 64,
+      });
           )
           .setTimestamp()],
       });

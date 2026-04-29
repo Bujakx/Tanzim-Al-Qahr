@@ -288,6 +288,14 @@ module.exports = {
       return handleModal(interaction);
     }
     // ============================
+    // BUTTON: Składki (nawigacja tygodni)
+    // ============================
+    if (interaction.isButton() && interaction.customId.startsWith('skladka_')) {
+      const { handleButton } = require('../commands/admin/skladka');
+      return handleButton(interaction);
+    }
+
+    // ============================
     // BUTTON: Finanse (wpłać / wypłać)
     // ============================
     if (interaction.isButton() && (interaction.customId === 'finanse_wplac' || interaction.customId === 'finanse_wyplac')) {

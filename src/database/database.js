@@ -128,6 +128,15 @@ async function initDb() {
     await conn.query(`ALTER TABLE numery ADD COLUMN imie_nazwisko VARCHAR(60) NOT NULL DEFAULT ''`).catch(err => {
       if (err.errno !== 1060) throw err; // 1060 = duplicate column - ignoruj
     });
+    await conn.query(`CREATE TABLE IF NOT EXISTS skladki (
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      user_id       VARCHAR(30)  NOT NULL,
+      nick_ic       VARCHAR(100) NOT NULL,
+      week_key      VARCHAR(10)  NOT NULL,
+      paid_at       DATETIME     DEFAULT CURRENT_TIMESTAMP,
+      registered_by VARCHAR(30),
+      UNIQUE KEY uq_user_week (user_id, week_key)
+    ) CHARSET=utf8mb4`);
     console.log('✅ Baza danych (MySQL) gotowa!');
   } finally {
     conn.release();
@@ -442,6 +451,23 @@ async function getNumer(userId) {
   return rows[0] ?? null; // { numer, imie_nazwisko } or null
 }
 
+async function markSkladka(userId, nickIc, weekKey, registeredBy) {
+  await pool.query(
+    `INSERT INTO skladki (user_id, nick_ic, week_key, registered_by) VALUES (?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE nick_ic = VALUES(nick_ic), paid_at = CURRENT_TIMESTAMP, registered_by = VALUES(registered_by)`,
+    [userId, nickIc, weekKey, registeredBy || null]
+  );
+}
+
+async function unmarkSkladka(userId, weekKey) {
+  await pool.query('DELETE FROM skladki WHERE user_id = ? AND week_key = ?', [userId, weekKey]);
+}
+
+async function getSkladkaForWeek(weekKey) {
+  const [rows] = await pool.query('SELECT * FROM skladki WHERE week_key = ?', [weekKey]);
+  return rows;
+}
+
 async function getAllNumery() {
   const [rows] = await pool.query('SELECT user_id, numer, imie_nazwisko FROM numery ORDER BY CAST(numer AS UNSIGNED) ASC, numer ASC');
   return rows;
@@ -487,5 +513,8 @@ module.exports = {
   removeNumerByName,
   getNumer,
   getAllNumery,
+  markSkladka,
+  unmarkSkladka,
+  getSkladkaForWeek,
 };
 
